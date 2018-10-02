@@ -58,7 +58,7 @@ $data = array(
 );
 
 
-$cw = new Focus599Dev\Crawler\Crawler($data);
+$cw = new Focus599Dev\CrawlerRJ\Crawler($data);
 
 $cw->getBoleto();
 

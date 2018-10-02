@@ -1,6 +1,6 @@
 <?php 
 
-namespace Focus599Dev\Crawler;
+namespace Focus599Dev\CrawlerRJ;
 
 use DOMDocument;
 use DomXpath;
