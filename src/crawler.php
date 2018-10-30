@@ -233,9 +233,13 @@ class Crawler{
 
 		$html = $this->execCurl($this->urls[$this->fase], 'POST', $data, null, false);
 
-		if ($html){
+		if ($html != 'Invalid path /begin was requested'){
+			
+			if ($html){
 
-			$this->savePDF($html);
+				$this->savePDF($html);
+
+			}
 
 		}
 	}
