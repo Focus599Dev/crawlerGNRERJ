@@ -26,6 +26,8 @@ class Crawler{
 
 	protected $endFase = 3;
 
+	public $imps = array();
+
 	protected $header = array(
 		// 'Accept: text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,image/apng,*/*;q=0.8',
 		// 'Accept-Encoding: gzip, deflate',
@@ -205,6 +207,12 @@ class Crawler{
 
 		$data['{pageFlow.documentoForm.tipoPagamento}'] = $data['wlw-select_key:{actionForm.tipoPagamento}'];
 
+		$this->getImpostosICMS($data);
+
+		$this->getImpostosFECP($data);
+
+		$this->imps = $data;
+		
 		$html = $this->execCurl($this->urls[$this->fase], 'POST', $data, null, false);
 
 		$this->text_html = $html;
@@ -243,6 +251,192 @@ class Crawler{
 
 		}
 	}
+
+	private function getImpostosICMS(&$data){
+
+		$urlICMS = 'http://www1.fazenda.rj.gov.br/projetoGCTBradesco/dwr/exec/pfEmitirDocumento.calcularValorICMSQualif.dwr';
+
+		$dataICMS = 'callCount=1' . chr(10);
+
+		$dataICMS .= 'c0-scriptName=pfEmitirDocumento' . chr(10);
+		
+		$dataICMS .= 'c0-methodName=calcularValorICMSQualif' . chr(10);
+
+		$dataICMS .= 'c0-id=' . (floor(rand() * 10001)) . '_' . time() . chr(10);
+
+		$dataICMS .= 'c0-param0=' . 'string:' . urlencode($data['{pageFlow.documentoForm.icmsInformado}']) . chr(10);
+
+		$dataICMS .= 'c0-param1=' . 'string:0%2C00' . chr(10);
+
+		$dataICMS .= 'c0-param2=' . 'string:' .  urlencode($data['{pageFlow.documentoForm.dataPagamento}']) . chr(10);
+
+		$dataICMS .= 'c0-param3=' . 'string:' .  urlencode($data['{pageFlow.documentoForm.dataVencimento}']) . chr(10);
+
+		$dataICMS .= 'c0-param4=' . 'string:' . chr(10);
+
+		$dataICMS .= 'c0-param5=' . 'number:0' . chr(10);
+
+		$dataICMS .= 'xml=' . 'true';
+
+		$response = $this->getCurlImpostos($urlICMS, $dataICMS);
+
+		$dataImps = $this->parseImpostoICMS($response);
+
+		$data = array_merge($data, $dataImps);
+	}
+
+	private function getImpostosFECP(&$data){
+
+		$urlFECP = 'http://www1.fazenda.rj.gov.br/projetoGCTBradesco/dwr/exec/pfEmitirDocumento.calcularValorICMS.dwr';
+
+		$dataFECP = 'callCount=1' . chr(10);
+
+		$dataFECP .= 'c0-scriptName=pfEmitirDocumento' . chr(10);
+		
+		$dataFECP .= 'c0-methodName=calcularValorICMS' . chr(10);
+
+		$dataFECP .= 'c0-id=' . (floor(rand() * 10001)) . '_' . time() . chr(10);
+
+		$dataFECP .= 'c0-param0=' . 'string:' . urlencode($data['{pageFlow.documentoForm.fecpInformado}']) . chr(10);
+
+		$dataFECP .= 'c0-param1=' . 'string:0%2C00' . chr(10);
+
+		$dataFECP .= 'c0-param2=' . 'string:' .  urlencode($data['{pageFlow.documentoForm.dataPagamento}']) . chr(10);
+
+		$dataFECP .= 'c0-param3=' . 'string:' .  urlencode($data['{pageFlow.documentoForm.dataVencimento}']) . chr(10);
+
+		$dataFECP .= 'c0-param4=' . 'string:' . chr(10);
+
+		$dataFECP .= 'xml=' . 'true';
+
+		$response = $this->getCurlImpostos($urlFECP, $dataFECP);
+
+		$dataImps = $this->parseImpostoFECP($response);
+
+		$data = array_merge($data, $dataImps);
+	}
+
+	private function parseImpostoFECP($str){
+
+		$explited = explode(';', $str);
+
+		unset($explited[count($explited) -1]);
+
+		$str_eval = '';
+
+		foreach ($explited as $key => $code) {
+			
+
+			preg_match('/var /', $code, $match);
+
+			if ($match){
+
+				$str_eval .= str_replace('var ', '$', $code) . ';';
+
+			}
+
+		}
+
+		$data = array();
+
+		try{
+
+			eval($str_eval);
+
+			$data['{pageFlow.documentoForm.fecpAtualizado}'] = $s3;
+			
+			$data['{pageFlow.documentoForm.valorMoraFECP}'] = $s5;
+			
+			$data['{pageFlow.documentoForm.valorMultaMoraFECP}'] = $s6;
+
+			$data['{pageFlow.documentoForm.totalFecp}'] = $s7;
+
+		} catch(\Exception $e){
+
+		}
+
+		return $data;
+
+	}
+
+	private function parseImpostoICMS($str){
+
+		$explited = explode(';', $str);
+
+		unset($explited[count($explited) -1]);
+
+		$str_eval = '';
+
+		foreach ($explited as $key => $code) {
+			
+
+			preg_match('/var /', $code, $match);
+
+			if ($match){
+
+				$str_eval .= str_replace('var ', '$', $code) . ';';
+
+			}
+
+		}
+
+		$data = array();
+
+		try{
+
+			eval($str_eval);
+
+			$data['{pageFlow.documentoForm.icmsAtualizado}'] = $s3;
+			
+			$data['{pageFlow.documentoForm.moraIcms}'] = $s5;
+			
+			$data['{pageFlow.documentoForm.valorMultaMoraICMS}'] = $s6;
+
+			$data['{pageFlow.documentoForm.totalIcms}'] = $s7;
+
+			$data['{pageFlow.documentoForm.icmsCompensado}'] = $s2;
+
+			$data['{pageFlow.documentoForm.icmsAposCompensacao}'] = $s4;
+
+		} catch(\Exception $e){
+
+		}
+
+		return $data;
+
+	}
+
+	private function getCurlImpostos($url, $data){
+
+		try{
+
+			$ch = curl_init();
+	
+			curl_setopt($ch, CURLOPT_URL, $url);
+
+			curl_setopt($ch, CURLOPT_POST, true);
+
+			curl_setopt($ch, CURLOPT_POSTFIELDS, $data);			
+
+			curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+
+			curl_setopt($ch, CURLOPT_HTTPHEADER, array(
+				'Content-Type:text/plain',
+                'Content-Length: ' . strlen($data))
+            );
+
+			$response = curl_exec($ch);
+
+			curl_close($ch);
+
+			return $response;
+
+		} catch(\Exception $e){
+
+			print_r('Erro: '. $e->getMessage());
+		}
+	}
+
 
 	private function replaceImagesToBase64(){
 
@@ -437,6 +631,10 @@ class Crawler{
 
 		return false;
 
+	}
+
+	public function getImps(){
+		return $this->imps;
 	}
 }
 
