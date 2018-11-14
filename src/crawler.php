@@ -369,7 +369,6 @@ class Crawler{
 
 		foreach ($explited as $key => $code) {
 			
-
 			preg_match('/var /', $code, $match);
 
 			if ($match){
